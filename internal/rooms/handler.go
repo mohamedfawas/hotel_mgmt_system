@@ -59,7 +59,9 @@ func (h *Handler) CreateRoom(c *gin.Context) {
 
 	createdRoom, err := h.svc.CreateRoom(c.Request.Context(), hotelCode, newRoom)
 	if err != nil {
-		log.Printf("failed to create room: %w", err)
+		if apperror.ShouldLogError(err) {
+			log.Printf("failed to create room: %w", err)
+		}
 		apiresponse.Error(c, err, nil)
 		return
 	}

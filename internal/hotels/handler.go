@@ -52,7 +52,9 @@ func (h *Handler) CreateHotel(c *gin.Context) {
 
 	createdHotel, err := h.svc.CreateHotel(c.Request.Context(), newHotel)
 	if err != nil {
-		log.Printf("failed to create hotel: %w", err)
+		if apperror.ShouldLogError(err) {
+			log.Printf("failed to create hotel: %w", err)
+		}
 		apiresponse.Error(c, err, nil)
 		return
 	}
@@ -66,9 +68,7 @@ func (h *Handler) CreateHotel(c *gin.Context) {
 	apiresponse.Created(c, "Hotel created successfully", createdHotelResponse)
 }
 
-
 func (h *Handler) ListHotels(c *gin.Context) {
-	// get business id (tenant) from context
 	businessIDRaw, ok := c.Get(constants.ContextBusinessID)
 	if !ok {
 		apiresponse.Error(c, apperror.ErrBusinessIDMissing, nil)
@@ -80,10 +80,8 @@ func (h *Handler) ListHotels(c *gin.Context) {
 		return
 	}
 
-	// parse pagination parameters
 	p := pagination.FromRequest(c)
 
-	// call service
 	hotelsWithRooms, err := h.svc.ListHotelsWithRooms(c.Request.Context(), businessID, p.Limit, p.Offset)
 	if err != nil {
 		log.Printf("failed to list hotels: %v", err)

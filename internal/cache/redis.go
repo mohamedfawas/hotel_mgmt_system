@@ -51,13 +51,10 @@ func NewClient(ctx context.Context, cfg Config) (*Client, error) {
 	return &Client{Client: client}, nil
 }
 
-// Set stores value with NO expiration (persistent until DEL).
-// Redis uses 0 duration to indicate no TTL.
 func (c *Client) Set(ctx context.Context, key string, value interface{}) error {
 	return c.Client.Set(ctx, key, value, 0).Err()
 }
 
-// Exists returns true if the key exists.
 func (c *Client) Exists(ctx context.Context, key string) (bool, error) {
 	exists, err := c.Client.Exists(ctx, key).Result()
 	if err != nil {

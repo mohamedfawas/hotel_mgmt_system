@@ -22,7 +22,6 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// initialize app (wires DB, cache, router)
 	application, err := app.NewApp(ctx, cfg)
 	if err != nil {
 		log.Fatalf("failed to initialize app: %v", err)
@@ -45,7 +44,6 @@ func main() {
 		log.Printf("server error: %v\n", err)
 	}
 
-	// begin graceful shutdown
 	shutdownTimeout := 15 * time.Second
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer shutdownCancel()

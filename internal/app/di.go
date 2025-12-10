@@ -31,6 +31,7 @@ type roomListerAdapter struct {
 	repo rooms.RoomRepository
 }
 
+// NOTES : I created this to avoid import cycle error, I couldn't find any other alternate approach within the given time.
 func (r *roomListerAdapter) ListRoomsByHotelIDs(ctx context.Context, hotelIDs []uuid.UUID) (map[uuid.UUID][]hotels.RoomSummary, error) {
 	roomRows, err := r.repo.ListRoomsByHotelIDs(ctx, hotelIDs)
 	if err != nil {
@@ -39,7 +40,6 @@ func (r *roomListerAdapter) ListRoomsByHotelIDs(ctx context.Context, hotelIDs []
 
 	out := make(map[uuid.UUID][]hotels.RoomSummary)
 	for _, rm := range roomRows {
-		// defense-in-depth: ensure rm is not nil and hotel id exists
 		if rm == nil {
 			continue
 		}
@@ -86,11 +86,8 @@ func NewApp(ctx context.Context, cfg *config.Config) (*App, error) {
 		Router: router,
 	}
 
-	// initialize dependencies (repositories, services, handlers, middleware)
 	if err := app.initDependencies(); err != nil {
-		// if wiring fails, close clients and return error
 		dbClient.Close()
-		// you might also close cacheClient if it has Close()
 		return nil, fmt.Errorf("failed to init dependencies: %w", err)
 	}
 
@@ -100,7 +97,6 @@ func NewApp(ctx context.Context, cfg *config.Config) (*App, error) {
 }
 
 func (a *App) initDependencies() error {
-	// tenant middleware (uses cache + tenant repo)
 	tenantRepo := tenant.NewTenantRepository(a.DB)
 	a.TenantMw = tenant.New(a.Cache, tenantRepo)
 
@@ -108,10 +104,8 @@ func (a *App) initDependencies() error {
 	roomRepo := rooms.NewRepository(a.DB)
 	roomsAdapter := &roomListerAdapter{repo: roomRepo}
 
-
 	hotelSvc := hotels.NewService(hotelRepo, roomsAdapter)
 	roomSvc := rooms.NewService(roomRepo, hotelRepo)
-
 
 	a.HotelHandler = hotels.NewHandler(hotelSvc)
 	a.RoomHandler = rooms.NewHandler(roomSvc)

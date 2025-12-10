@@ -29,12 +29,10 @@ func (r *tenantRepository) Exists(ctx context.Context, id string) (bool, error) 
 	err := r.db.Pool.QueryRow(ctx, query, id).Scan(&dummy)
 
 	if err == pgx.ErrNoRows {
-		// Tenant does NOT exist
 		return false, nil
 	}
 
 	if err != nil {
-		// Any DB error (connection, syntax, etc.)
 		return false, fmt.Errorf("tenant lookup failed: %w", err)
 	}
 
