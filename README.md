@@ -5,14 +5,21 @@ Each request must include a X-Business-ID header to ensure strict tenant-level d
 
 ## Project Structure
 
-cmd/server/         → Application entrypoint
-internal/app/       → DI, router setup
-internal/tenant/    → Tenant validation middleware
-internal/hotels/    → Hotel logic (handler/service/repo)
-internal/rooms/     → Room logic
-internal/db/        → Postgres connection (pgx)
-internal/cache/     → Redis client
-migrations/         → SQL schema + seed data
+`cmd/server/`        → Application entrypoint
+
+`internal/app/`       → DI, router setup
+
+`internal/tenant/`    → Tenant validation middleware
+
+`internal/hotels/`    → Hotel logic (handler/service/repo)
+
+`internal/rooms/`     → Room logic
+
+`internal/db/`        → Postgres connection (pgx)
+
+`internal/cache/`     → Redis client
+
+`migrations/`         → SQL schema + seed data
 
 
 ## Requirements
