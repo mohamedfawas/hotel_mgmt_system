@@ -32,7 +32,7 @@ Each request must include a X-Business-ID header to ensure strict tenant-level d
 ## Database Setup
 
 1. Create a PostgreSQL database.
-2. Run the migration files.
+2. Run the migration files (includes seeding 100 business ids and names)
 
 
 ## Running the Application
