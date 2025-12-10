@@ -13,14 +13,12 @@ import (
 )
 
 func main() {
-	// load config (main is composition root)
 	configPath := os.Getenv("CONFIG_PATH")
 	cfg, err := config.Load(configPath)
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	// root context for app lifetime
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -30,15 +28,13 @@ func main() {
 		log.Fatalf("failed to initialize app: %v", err)
 	}
 
-	// start server in goroutine and capture runtime errors
 	errCh := make(chan error, 1)
 	go func() {
 		errCh <- application.Run()
 	}()
 
-	log.Println("🚀 server started")
+	log.Printf("server started at the port : %s", cfg.HTTP.Port)
 
-	// listen for signals or server errors
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
@@ -46,7 +42,6 @@ func main() {
 	case sig := <-sigCh:
 		log.Printf("signal received: %v\n", sig)
 	case err := <-errCh:
-		// server returned an error (listen/serve)
 		log.Printf("server error: %v\n", err)
 	}
 
@@ -58,6 +53,6 @@ func main() {
 	if err := application.Shutdown(shutdownCtx); err != nil {
 		log.Printf("error during shutdown: %v", err)
 	} else {
-		log.Println("✅ graceful shutdown complete")
+		log.Println("graceful shutdown complete")
 	}
 }

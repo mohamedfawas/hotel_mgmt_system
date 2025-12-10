@@ -24,7 +24,6 @@ func (a *App) Run() error {
 
 	log.Printf("Server running on %s", addr)
 
-	// blocks until server stops or returns an error
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return fmt.Errorf("listen and serve: %w", err)
 	}
@@ -35,7 +34,6 @@ func (a *App) Run() error {
 func (a *App) Shutdown(ctx context.Context) error {
 	var firstErr error
 
-	// 1) HTTP shutdown
 	if a.httpServer != nil {
 		if err := a.httpServer.Shutdown(ctx); err != nil {
 			log.Printf("http shutdown error: %v", err)
@@ -45,12 +43,10 @@ func (a *App) Shutdown(ctx context.Context) error {
 		}
 	}
 
-	// 2) close DB
 	if a.DB != nil {
 		a.DB.Close()
 	}
 
-	// 3) close cache
 	if a.Cache != nil {
 		if err := a.Cache.Close(); err != nil {
 			log.Printf("cache close error: %v", err)

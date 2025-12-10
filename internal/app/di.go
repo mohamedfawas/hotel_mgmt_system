@@ -6,9 +6,13 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/mohamedfawas/hotel_mgmt_system/internal/cache"
 	"github.com/mohamedfawas/hotel_mgmt_system/internal/config"
 	"github.com/mohamedfawas/hotel_mgmt_system/internal/db"
+	"github.com/mohamedfawas/hotel_mgmt_system/internal/hotels"
+	"github.com/mohamedfawas/hotel_mgmt_system/internal/rooms"
+	"github.com/mohamedfawas/hotel_mgmt_system/internal/tenant"
 )
 
 type App struct {
@@ -17,6 +21,34 @@ type App struct {
 	Cache      *cache.Client
 	Router     *gin.Engine
 	httpServer *http.Server
+
+	TenantMw     *tenant.Middleware
+	HotelHandler *hotels.Handler
+	RoomHandler  *rooms.Handler
+}
+
+type roomListerAdapter struct {
+	repo rooms.RoomRepository
+}
+
+func (r *roomListerAdapter) ListRoomsByHotelIDs(ctx context.Context, hotelIDs []uuid.UUID) (map[uuid.UUID][]hotels.RoomSummary, error) {
+	roomRows, err := r.repo.ListRoomsByHotelIDs(ctx, hotelIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make(map[uuid.UUID][]hotels.RoomSummary)
+	for _, rm := range roomRows {
+		// defense-in-depth: ensure rm is not nil and hotel id exists
+		if rm == nil {
+			continue
+		}
+		out[rm.HotelID] = append(out[rm.HotelID], hotels.RoomSummary{
+			RoomNumber: rm.RoomNumber,
+			RoomType:   rm.RoomType,
+		})
+	}
+	return out, nil
 }
 
 func NewApp(ctx context.Context, cfg *config.Config) (*App, error) {
@@ -54,7 +86,35 @@ func NewApp(ctx context.Context, cfg *config.Config) (*App, error) {
 		Router: router,
 	}
 
+	// initialize dependencies (repositories, services, handlers, middleware)
+	if err := app.initDependencies(); err != nil {
+		// if wiring fails, close clients and return error
+		dbClient.Close()
+		// you might also close cacheClient if it has Close()
+		return nil, fmt.Errorf("failed to init dependencies: %w", err)
+	}
+
 	app.registerRoutes()
 
 	return app, nil
+}
+
+func (a *App) initDependencies() error {
+	// tenant middleware (uses cache + tenant repo)
+	tenantRepo := tenant.NewTenantRepository(a.DB)
+	a.TenantMw = tenant.New(a.Cache, tenantRepo)
+
+	hotelRepo := hotels.NewRepository(a.DB)
+	roomRepo := rooms.NewRepository(a.DB)
+	roomsAdapter := &roomListerAdapter{repo: roomRepo}
+
+
+	hotelSvc := hotels.NewService(hotelRepo, roomsAdapter)
+	roomSvc := rooms.NewService(roomRepo, hotelRepo)
+
+
+	a.HotelHandler = hotels.NewHandler(hotelSvc)
+	a.RoomHandler = rooms.NewHandler(roomSvc)
+
+	return nil
 }
